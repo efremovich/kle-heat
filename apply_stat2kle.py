@@ -153,13 +153,14 @@ def main():  # главный алгоритм программы, надо ра
 
                   if idx in [0, 3, 6] and hand == 'r': # если легенда в левом столбце (значит она на lower слое) и рука правая
                     l_lower_cnt += cnt # увеличить счетчик левого lower количеством нажатий этой клавиши
-                  elif idx in [2, 5, 8] and hand == 'r':
+                  elif idx in [2, 5, 8] and hand == 'r': # правый столбец, правая рука
+                    l_raise_cnt += cnt # добавить к счетчику левого raise
+                  elif idx in [2, 5, 8] and hand == 'l': # и так далее
                     r_raise_cnt += cnt
-                  elif idx in [2, 5, 8] and hand == 'l':
-                    l_raise_cnt += cnt
                   elif idx in [0, 3, 6] and hand == 'l':
-                    l_lower_cnt += cnt
+                    r_lower_cnt += cnt
 
+            # если легенда на клавише это легенда фирмварного слоя, то сохранить координаты клавиши и выравнивание легенды
             if hold.upper() == "RAISE" and hand == 'r':
               l_raise_i, l_raise_j, l_raise_a = i, j, a
             elif hold.upper() == "RAISE" and hand == 'l':
@@ -169,35 +170,37 @@ def main():  # главный алгоритм программы, надо ра
             elif hold.upper() == "LOWER" and hand == 'l':
               r_lower_i, r_lower_j, r_lower_a = i, j, a
 
-            c = list_get(d_p, 10, 0)
-            c = 0 if c is '' else int(c)
-            d_p[10] = cnt + c
-            layout[i][j] = comp_label(a, d_p)
+            c = list_get(d_p, 10, 0) # получить значение фронтальной центральной легенды, там должен быть счётчик нажатий клавиши
+            c = 0 if c is '' else int(c) # инициализировать нулём или привести от строки к инту
+            d_p[10] = cnt + c # добавить что насчитали
+            layout[i][j] = comp_label(a, d_p) # записать обратно
 
-    #d_p = decomp_label(r_raise_a, layout[r_raise_i][r_raise_j])
-    #c = list_get(d_p, 10, 0)
-    #c = 0 if c is '' else int(c)
-    #d_p[10] = r_raise_cnt + c
-    #layout[r_raise_i][r_raise_j] = comp_label(r_raise_a, d_p)
+    #получить легенды правого raise, получить его счетчик, дописать колво нажатий которое было произведено через него и сохранить
+    d_p = decomp_label(r_raise_a, layout[r_raise_i][r_raise_j])
+    c = list_get(d_p, 10, 0)
+    c = 0 if c is '' else int(c)
+    d_p[10] = r_raise_cnt + c
+    layout[r_raise_i][r_raise_j] = comp_label(r_raise_a, d_p)
+    # и так далее
+    d_p = decomp_label(l_raise_a, layout[l_raise_i][l_raise_j])
+    c = list_get(d_p, 10, 0)
+    c = 0 if c is '' else int(c)
+    d_p[10] = l_raise_cnt + c
+    layout[l_raise_i][l_raise_j] = comp_label(l_raise_a, d_p)
 
-    #d_p = decomp_label(l_raise_a, layout[l_raise_i][l_raise_j])
-    #c = list_get(d_p, 10, 0)
-    #c = 0 if c is '' else int(c)
-    #d_p[10] = l_raise_cnt + c
-    #layout[l_raise_i][l_raise_j] = comp_label(l_raise_a, d_p)
+    d_p = decomp_label(r_lower_a, layout[r_lower_i][r_lower_j])
+    c = list_get(d_p, 10, 0)
+    c = 0 if c is '' else int(c)
+    d_p[10] = r_lower_cnt + c
+    layout[r_lower_i][r_lower_j] = comp_label(r_lower_a, d_p)
 
-    #d_p = decomp_label(r_lower_a, layout[r_lower_i][r_lower_j])
-    #c = list_get(d_p, 10, 0)
-    #c = 0 if c is '' else int(c)
-    #d_p[10] = r_lower_cnt + c
-    #layout[r_lower_i][r_lower_j] = comp_label(r_lower_a, d_p)
+    d_p = decomp_label(l_lower_a, layout[l_lower_i][l_lower_j])
+    c = list_get(d_p, 10, 0)
+    c = 0 if c is '' else int(c)
+    d_p[10] = l_lower_cnt + c
+    layout[l_lower_i][l_lower_j] = comp_label(l_lower_a, d_p)
 
-    #d_p = decomp_label(l_lower_a, layout[l_lower_i][l_lower_j])
-    #c = list_get(d_p, 10, 0)
-    #c = 0 if c is '' else int(c)
-    #d_p[10] = l_lower_cnt + c
-    #layout[l_lower_i][l_lower_j] = comp_label(l_lower_a, d_p)
-
+#   это алгоритм поиска минимальног и максимального счетчиков, но он не используется пока что, т.к. цвета выходят не очень. Но надо его юзать по хорошему, потом к нему перейдем
 #    a = 4
 #    for i, line in enumerate(layout):
 #      if isinstance(line, list):
@@ -211,13 +214,14 @@ def main():  # главный алгоритм программы, надо ра
 #            minval = min(c, minval)
 #            maxval = max(c, maxval)
 
+    # проходим по всеё раскладке как обычно с целью перед легендой клавиши вставить {c: #%%%%%%} с цветом легенды
     a = 4
-    inserted = False
+    inserted = False # костыль помоему. Флаг который хранит то, что мы что то вставили на текущий индекс
     #cntr = 0
     for i, line in enumerate(layout):
       if isinstance(line, list):
         for j, p in enumerate(line):
-          if inserted:
+          if inserted: # если вставили, то выключить флаг и скипнуть индекс
               inserted = False
               continue
           if isinstance(p, dict):
@@ -226,15 +230,14 @@ def main():  # главный алгоритм программы, надо ра
             d_p = decomp_label(a, p)
             c = list_get(d_p, 10, 0)
             c = 0 if c is '' else int(c)
-            col = format_rgb(val2rgb_gradient(minval, maxval, c, gradient_colors))
-            #norm_c = constrain(0, 1, cntr/count_keys)
+            col = format_rgb(val2rgb_gradient(minval, maxval, c, gradient_colors)) # посчитать цвет
+            #norm_c = constrain(0, 1, cntr/count_keys) # эксперементы с альтернативной функцией для градиентов
             #col = format_rgb(astro_intensity(0,5,1,0.2,norm_c))
-            #print(col)
-            layout[i].insert(j, {"c": col})
-            inserted = True
-            cntr += 1
+            layout[i].insert(j, {"c": col}) # вставить
+            inserted = True # записать что вставили
+            #cntr += 1 # подсчет номера текущей клавиши. Нужен для вывода цвета просто по палитре для эксперементов
 
-    write_heatmap(layout, heatmap_path)
+    write_heatmap(layout, heatmap_path) # сохранить результат
 
 if __name__ == "__main__":
     main()
