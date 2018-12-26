@@ -1,35 +1,32 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+from qtextasdata import QTextAsData,QInputParams
 from os.path import expanduser
-from re import sub
-import pandas as pd
+import csv
 import argparse
 
 
 def read_keylog(path, sep='\t'):
-    return pd.read_csv(path, delimiter=sep, header=0)
+    q = QTextAsData()
+    q.load_data(path, QInputParams(delimiter=sep, skip_header=True, input_encoding="utf-8"))
+    return q
 
 
-def calc_press_stat(keylog):  # optimize
-    keylog["iso_next_group"] = keylog["mods_mask"].map(
-        lambda x: (x >> 13) & 1)
-    data = keylog[(keylog["pressed"] == 1) &
-                  (keylog["repeated"] == 0)] \
-        .groupby(["symbol", "iso_next_group"]) \
-        .size() \
-        .sort_values(ascending=False)
-    data = pd.DataFrame({"sm_m": data.index, "cnt": data.values})
-    data[["symbol", "iso_next_group"]] = data["sm_m"].apply(pd.Series)
-    data = data.drop(columns="sm_m")
-    data = pd.merge(data, keylog[["symbol", "repr"]],
-                    on="symbol", how="left").drop_duplicates()
-    data.fillna(value="None", inplace=True)
-    return data
+def calc_press_stat(q, keylog_path):
+    query = '''SELECT COUNT(pressed) AS cnt, symbol, repr, (mods_mask >> 13) & 1 AS iso_next_group
+               FROM %s
+               WHERE pressed = 1 AND repeated = 0
+               GROUP BY symbol, repr, iso_next_group
+               ORDER BY cnt DESC'''%keylog_path
+    return q.execute(query)
 
 
 def write_stat(stat, path, sep='\t'):
-    stat.to_csv(path, sep=sep, encoding="utf-8", index=False)
+    with open(path, 'w') as stat_file:
+        writer = csv.writer(stat_file, delimiter=sep)
+        writer.writerow(stat.metadata.output_column_name_list)
+        [writer.writerow(line) for line in stat.data]
 
 
 def parse_args():
@@ -51,13 +48,8 @@ def parse_args():
 
 def main():
     keylog_path, stat_path = parse_args()
-    keylog = read_keylog(keylog_path)
-    keylog.symbol = keylog.symbol.map(lambda x: x.upper())
-    keylog.repr = keylog.repr.map(
-        lambda x: (
-            lambda y: repr(
-                y.upper()) if isinstance(y, str) else y)(eval(x)))
-    write_stat(calc_press_stat(keylog), stat_path)
+    q = read_keylog(keylog_path)
+    write_stat(calc_press_stat(q, keylog_path), stat_path)
 
 
 if __name__ == "__main__":

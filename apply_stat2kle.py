@@ -59,7 +59,13 @@ def format_rgb(col):
 
 def read_keystat(path, sep='\t'):
     keystat = pd.read_csv(path, delimiter=sep, header=0)
-    keystat.repr = keystat.repr.map(lambda x: eval(x))
+    keystat.repr = keystat.repr.map(
+                     lambda x:
+                       (lambda y: y.upper()
+                                  if isinstance(y, str)
+                                  else y)(
+                       eval(x)))
+    keystat.symbol = keystat.symbol.map(lambda x: x.upper())
     return keystat
 
 
