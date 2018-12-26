@@ -1,6 +1,5 @@
 #!/usr/bin/python
 #-*-coding:utf-8-*-
-import re
 import json
 import pandas as pd
 import numpy as np
@@ -161,20 +160,20 @@ def main():  # главный алгоритм программы, надо ра
                     r_lower_cnt += cnt
 
             # если легенда на клавише это легенда фирмварного слоя, то сохранить координаты клавиши и выравнивание легенды
-            if hold.upper() == "RAISE" and hand == 'r':
+            if hold.upper() == "RAISE" and hand == 'l':
               l_raise_i, l_raise_j, l_raise_a = i, j, a
-            elif hold.upper() == "RAISE" and hand == 'l':
+            elif hold.upper() == "RAISE" and hand == 'r':
               r_raise_i, r_raise_j, r_raise_a = i, j, a
-            elif hold.upper() == "LOWER" and hand == 'r':
-              l_lower_i, l_lower_j, l_lower_a = i, j, a
             elif hold.upper() == "LOWER" and hand == 'l':
+              l_lower_i, l_lower_j, l_lower_a = i, j, a
+            elif hold.upper() == "LOWER" and hand == 'r':
               r_lower_i, r_lower_j, r_lower_a = i, j, a
 
             c = list_get(d_p, 10, 0) # получить значение фронтальной центральной легенды, там должен быть счётчик нажатий клавиши
             c = 0 if c is '' else int(c) # инициализировать нулём или привести от строки к инту
             d_p[10] = cnt + c # добавить что насчитали
             layout[i][j] = comp_label(a, d_p) # записать обратно
-
+    # этот участок кода падает, если не было найдено RAISE и LOWER
     #получить легенды правого raise, получить его счетчик, дописать колво нажатий которое было произведено через него и сохранить
     d_p = decomp_label(r_raise_a, layout[r_raise_i][r_raise_j])
     c = list_get(d_p, 10, 0)
