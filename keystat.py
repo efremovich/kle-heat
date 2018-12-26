@@ -34,21 +34,21 @@ def write_stat(stat, path, sep=", "):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Statistics aggregator for inputlistener.py')
-    parser.add_argument('-i', action='store', dest='keylog_filepath',
+    parser.add_argument('-i', action='store', dest='keylog_path',
                         help='keylog csv file path; default ~/.keylog.csv',
                         default=expanduser("~")+"/.keylog.csv")
-    parser.add_argument('-o', action='store', dest='stat_filepath',
+    parser.add_argument('-o', action='store', dest='stat_path',
                         help='statistics csv file path; default ~/.keystat.csv',
                         default=expanduser("~")+"/.keystat.csv")
     args = parser.parse_args()
-    return args.keylog_filepath, args.stat_filepath
+    return args.keylog_path, args.stat_path
 
 def main():
-    keylog_filepath, stat_filepath = parse_args()
-    keylog = read_keylog(keylog_filepath)
+    keylog_path, stat_path = parse_args()
+    keylog = read_keylog(keylog_path)
     keylog.symbol = keylog.symbol.map(lambda x: x.upper())
     keylog.repr = keylog.repr.map(lambda x: (lambda y: repr(y.upper()) if type(y) == str else y)(eval(x)))
-    write_stat(calc_press_stat(keylog), stat_filepath)
+    write_stat(calc_press_stat(keylog), stat_path)
 
 if __name__ == "__main__":
     main()

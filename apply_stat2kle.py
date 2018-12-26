@@ -1,11 +1,12 @@
 #!/usr/bin/python
 #-*-coding:utf-8-*-
+from functools import partial
+from os.path import expanduser
 import json
 import pandas as pd
 import numpy as np
-from functools import partial
-from os.path import expanduser
 import sys
+import argparse
 EPSILON = sys.float_info.epsilon
 
 def constrain(a, b, x):
@@ -72,6 +73,7 @@ LABEL_MAP = [
   [ 3,-1, 5,-1,10,-1,-1,-1, 4,-1,-1,-1], #6 = center front & y
   [ 4,-1,-1,-1,10,-1,-1,-1,-1,-1,-1,-1], #7 = center front & x & y
 ]
+
 def decomp_label(a, l):
   r = ['']*12
   for i, v in zip(LABEL_MAP[a], l.split('\n')):
@@ -82,16 +84,23 @@ def decomp_label(a, l):
 def comp_label(a, l):
   return '\n'.join(str(l[i]) if i >= 0 else '' for i in LABEL_MAP[a]).rstrip('\n')
 
+def parse_args():
+    parser = argparse.ArgumentParser(description='Draws heatmap on keyboard-layout-editor json')
+    parser.add_argument('-i', action='store', dest='stat_path',
+                        help='keystat csv file path; default ~/.keystat.csv',
+                        default=expanduser("~")+"/.keystat.csv")
+    parser.add_argument('-l', action='store', dest='layout_path', required=True,
+                        help='keyboard-layout-editor json path')
+    parser.add_argument('-o', action='store', dest='output_path', required=True,
+                        help='result kle json path')
+    args = parser.parse_args()
+    return args.stat_path, args.layout_path, args.output_path
+
 def main():
-
-    json_path = "jianheat.json"
-    stat_path = expanduser("~")+"/.keystat.csv"
-    heatmap_path = "jianheatmap.json"
-
+    stat_path, layout_path, output_path = parse_args()
 
     keystat = read_keystat(stat_path)
-    layout = read_layout(json_path)
-
+    layout = read_layout(layout_path)
 
     #minval = keystat.cnt.max()
     #maxval = 0
@@ -223,7 +232,7 @@ def main():
             inserted = True
             cntr += 1
 
-    write_heatmap(layout, heatmap_path)
+    write_heatmap(layout, output_path)
 
 if __name__ == "__main__":
     main()
