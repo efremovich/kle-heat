@@ -30,8 +30,9 @@ def val2rgb_gradient(minval, maxval, val, colors):
         return colors[i]
     else:
         (r1, g1, b1), (r2, g2, b2) = colors[i], colors[i + 1]
-        return int(r1 + f * (r2 - r1)), int(g1 + f *
-                                            (g2 - g1)), int(b1 + f * (b2 - b1))
+        return (int(r1 + f * (r2 - r1)),
+                int(g1 + f * (g2 - g1)),
+                int(b1 + f * (b2 - b1)))
 
 
 def cubehelix(s, r, h, g, l):
@@ -74,19 +75,14 @@ def write_heatmap(data, path):
 
 
 LABEL_MAP = [
-    # 0 = no centering             0  1  2
-    [0, 6, 2, 8, 9, 11, 3, 5, 1, 4, 7, 10],
-    # 1 = center x                 3  4  5
-    [1, 7, -1, -1, 9, 11, 4, -1, -1, -1, -1, 10],
-    # 2 = center y                 6  7  8
-    [3, -1, 5, -1, 9, 11, -1, -1, 4, -1, -1, 10],
-    # 3 = center x & y             -------
-    [4, -1, -1, -1, 9, 11, -1, -1, -1, -1, -1, 10],
-    # 4 = center front (default)   9 10 11
-    [0, 6, 2, 8, 10, -1, 3, 5, 1, 4, 7, -1],
-    [1, 7, -1, -1, 10, -1, 4, -1, -1, -1, -1, -1],  # 5 = center front & x
-    [3, -1, 5, -1, 10, -1, -1, -1, 4, -1, -1, -1],  # 6 = center front & y
-    [4, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1, -1],  # 7 = center front & x & y
+    [ 0, 6, 2, 8, 9,11, 3, 5, 1, 4, 7,10], #0 = no centering             0  1  2
+    [ 1, 7,-1,-1, 9,11, 4,-1,-1,-1,-1,10], #1 = center x                 3  4  5
+    [ 3,-1, 5,-1, 9,11,-1,-1, 4,-1,-1,10], #2 = center y                 6  7  8
+    [ 4,-1,-1,-1, 9,11,-1,-1,-1,-1,-1,10], #3 = center x & y             -------
+    [ 0, 6, 2, 8,10,-1, 3, 5, 1, 4, 7,-1], #4 = center front (default)   9 10 11
+    [ 1, 7,-1,-1,10,-1, 4,-1,-1,-1,-1,-1], #5 = center front & x
+    [ 3,-1, 5,-1,10,-1,-1,-1, 4,-1,-1,-1], #6 = center front & y
+    [ 4,-1,-1,-1,10,-1,-1,-1,-1,-1,-1,-1], #7 = center front & x & y
 ]
 
 
@@ -99,8 +95,9 @@ def decomp_label(a, l):
 
 
 def comp_label(a, l):
-    return '\n'.join(str(l[i]) if i >=
-                     0 else '' for i in LABEL_MAP[a]).rstrip('\n')
+    return '\n'.join(str(l[i]) if i >= 0 else ''
+                     for i
+                     in LABEL_MAP[a]).rstrip('\n')
 
 
 def parse_args():
@@ -169,11 +166,11 @@ def main():
                                 s = keystat[(keystat.symbol == s_k)]
                                 if s.values.size == 0:
                                     if idx in [3, 4, 5]:
-                                        s = keystat[(keystat.repr == s_k) & (
-                                            keystat.iso_next_group == 1)]
+                                        s = keystat[(keystat.repr == s_k) &
+                                                    (keystat.iso_next_group == 1)]
                                     elif idx in [0, 1, 2]:
-                                        s = keystat[(keystat.repr == s_k) & (
-                                            keystat.iso_next_group == 0)]
+                                        s = keystat[(keystat.repr == s_k) &
+                                                    (keystat.iso_next_group == 0)]
 
                                 if s.values.size > 0:
                                     cnt += s.cnt.values.sum()
