@@ -169,6 +169,7 @@ def main():
                     for idx, k in enumerate(d_p[:-3]):
                         if k:
                             for s_k in k.split(" "):
+                                legend_cnt = 0
                                 s_k = s_k.upper()
 
                                 s = keystat[(keystat.symbol == s_k)]
@@ -181,16 +182,17 @@ def main():
                                                     (keystat.iso_next_group == 0)]
 
                                 if s.values.size > 0:
-                                    cnt += s.cnt.values.sum()
+                                    legend_cnt = s.cnt.values.sum()
+                                    cnt += legend_cnt
 
                                 if idx in [0, 3, 6] and hand == 'r':
-                                    l_lower_cnt += cnt
+                                    l_lower_cnt += legend_cnt
                                 elif idx in [2, 5, 8] and hand == 'r':
-                                    l_raise_cnt += cnt
+                                    l_raise_cnt += legend_cnt
                                 elif idx in [2, 5, 8] and hand == 'l':
-                                    r_raise_cnt += cnt
+                                    r_raise_cnt += legend_cnt
                                 elif idx in [0, 3, 6] and hand == 'l':
-                                    r_lower_cnt += cnt
+                                    r_lower_cnt += legend_cnt
 
                     if hold.upper() == "RAISE" and hand == 'l':
                         l_raise_i, l_raise_j, l_raise_a = i, j, a

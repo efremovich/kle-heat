@@ -14,12 +14,16 @@ def read_keylog(path, sep='\t'):
 
 
 def calc_press_stat(q, keylog_path):
-    query = '''SELECT COUNT(pressed) AS cnt, symbol, repr, (mods_mask >> 13) & 1 AS iso_next_group
-               FROM %s
-               WHERE pressed = 1 AND repeated = 0
-               GROUP BY symbol, repr, iso_next_group
-               ORDER BY cnt DESC'''%keylog_path
-    return q.execute(query)
+    return q.execute('''
+      SELECT COUNT(pressed) AS cnt,
+             symbol,
+             repr,
+             (mods_mask >> 13) & 1 AS iso_next_group
+      FROM {file_path}
+      WHERE (pressed = 1)
+        AND (repeated = 0)
+      GROUP BY symbol, repr, iso_next_group
+      ORDER BY cnt DESC'''.format(file_path=keylog_path))
 
 
 def write_stat(stat, path, sep='\t'):
