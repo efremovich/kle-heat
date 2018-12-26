@@ -33,6 +33,7 @@
 # solution was not trivial -- YD 21/08/2015.
 
 from __future__ import unicode_literals, absolute_import
+import argparse
 import select
 import warnings
 import threading
@@ -407,11 +408,21 @@ class InputListener(threading.Thread):
         self._stop = True
         self.lock.release()
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Statistics aggregator for inputlistener.py')
+    parser.add_argument('-o', action='store', dest='keylog_path',
+                        help='keylog csv file path; default ~/.keylog.csv',
+                        default=expanduser("~") + "/.keylog.csv")
+    args = parser.parse_args()
+    return args.keylog_path
 
-if __name__ == '__main__':
-    keylog_filepath = expanduser("~") + "/.keylog.csv"
-    if not isfile(keylog_filepath):
-        with open(keylog_filepath, "w") as keylog_file:
+
+def main():
+    keylog_path = parse_args()
+
+    if not isfile(keylog_path):
+        with open(keylog_path, "w") as keylog_file:
             b = [
                 u"pressed",
                 u"keycode",
@@ -441,7 +452,7 @@ if __name__ == '__main__':
             values[u"symbol"] = values["symbol"].decode("utf-8")
             b = [str(values[k]) for k in [u"pressed", u"keycod", u"keysym", u"symbol", u"string", u"repeated", u"mods_mask"]]
             print("%7s %7s %6s %16s %9s %8s %15s" % tuple(b))
-            with open(keylog_filepath, "a") as keylog_file:
+            with open(keylog_path, "a") as keylog_file:
                 keylog_file.write('\t'.join(b) + u'\n')
 
     glib.threads_init()
@@ -464,3 +475,7 @@ if __name__ == '__main__':
             import traceback
             traceback.print_tb(kl.error.__traceback__)
         exit(1)
+
+
+if __name__ == '__main__':
+    main()
