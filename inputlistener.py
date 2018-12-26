@@ -32,6 +32,10 @@
 # Drop me a line if you ever find this comment helpful, as finding a decent
 # solution was not trivial -- YD 21/08/2015.
 
+import select
+import warnings
+import threading
+import sys
 from __future__ import unicode_literals, absolute_import
 
 if __name__ == '__main__':
@@ -42,15 +46,10 @@ else:
     from . import xlib
     from . import keysyms
 
-import sys
 if sys.version_info.major < 3:
     import glib
 else:
     from gi.repository import GLib as glib
-
-import threading
-import warnings
-import select
 
 
 # convenience wrappers
@@ -127,9 +126,9 @@ def phantom_release(dpy, kev):
         return False
     ev = xlib.XEvent()
     xlib.XPeekEvent(dpy, xlib.byref(ev))
-    return (ev.type == xlib.KeyPress and \
-            ev.xkey.state == kev.state and \
-            ev.xkey.keycode == kev.keycode and \
+    return (ev.type == xlib.KeyPress and
+            ev.xkey.state == kev.state and
+            ev.xkey.keycode == kev.keycode and
             ev.xkey.time == kev.time)
 
 
@@ -140,7 +139,6 @@ def keysym_to_unicode(keysym):
     if keydata is not None:
         return keydata[0]
     return None
-
 
 
 class KeyData():
@@ -160,14 +158,18 @@ class KeyData():
 
 class InputType:
     keyboard = 0b001
-    button   = 0b010
+    button = 0b010
     movement = 0b100
-    all      = 0b111
-
+    all = 0b111
 
 
 class InputListener(threading.Thread):
-    def __init__(self, callback, input_types=InputType.all, kbd_compose=True, kbd_translate=True):
+    def __init__(
+            self,
+            callback,
+            input_types=InputType.all,
+            kbd_compose=True,
+            kbd_translate=True):
         super(InputListener, self).__init__()
         self.callback = callback
         self.input_types = input_types
@@ -176,7 +178,6 @@ class InputListener(threading.Thread):
         self.lock = threading.Lock()
         self._stop = True
         self.error = None
-
 
     def _event_received(self, ev):
         if xlib.KeyPress <= ev.type <= xlib.MotionNotify:
@@ -191,7 +192,6 @@ class InputListener(threading.Thread):
             fwd_ev.xclient.data[0] = ev.type
             xlib.XSendEvent(self.replay_dpy, self.replay_win, False, 0, fwd_ev)
 
-
     def _event_callback(self, data):
         self.callback(data)
         return False
@@ -201,7 +201,6 @@ class InputListener(threading.Thread):
         if data.string is None:
             data.string = keysym_to_unicode(data.keysym)
         glib.idle_add(self._event_callback, data)
-
 
     def _event_modifiers(self, kev, data):
         data.modifiers = modifiers = {}
@@ -213,7 +212,6 @@ class InputListener(threading.Thread):
         modifiers['hyper'] = bool(kev.state & xlib.Mod3Mask)
         modifiers['super'] = bool(kev.state & xlib.Mod4Mask)
         modifiers['alt_gr'] = bool(kev.state & xlib.Mod5Mask)
-
 
     def _event_keypress(self, kev, data):
         buf = xlib.create_string_buffer(16)
@@ -233,11 +231,9 @@ class InputListener(threading.Thread):
         data.keysym = keysym.value
         data.status = status.value
 
-
     def _event_lookup(self, kev, data):
         # this is mostly for debugging: we do not account for group/level
         data.keysym = xlib.XkbKeycodeToKeysym(kev.display, kev.keycode, 0, 0)
-
 
     def start(self):
         self.lock.acquire()
@@ -245,13 +241,11 @@ class InputListener(threading.Thread):
         self.error = None
         super(InputListener, self).start()
 
-
     def stop(self):
         with self.lock:
             if not self._stop:
                 self._stop = True
                 xlib.XRecordDisableContext(self.control_dpy, self.record_ctx)
-
 
     def _kbd_init(self):
         self._kbd_last_ev = xlib.XEvent()
@@ -267,17 +261,18 @@ class InputListener(threading.Thread):
         if not self._kbd_replay_xim:
             raise Exception("Cannot initialize input method")
 
-        self._kbd_replay_xic = xlib.XCreateIC(self._kbd_replay_xim,
-                                              xlib.XNClientWindow, self.replay_win,
-                                              xlib.XNInputStyle, style,
-                                              None)
+        self._kbd_replay_xic = xlib.XCreateIC(
+            self._kbd_replay_xim,
+            xlib.XNClientWindow,
+            self.replay_win,
+            xlib.XNInputStyle,
+            style,
+            None)
         xlib.XSetICFocus(self._kbd_replay_xic)
-
 
     def _kbd_del(self):
         xlib.XDestroyIC(self._kbd_replay_xic)
         xlib.XCloseIM(self._kbd_replay_xim)
-
 
     def _kbd_process(self, ev):
         if ev.type == xlib.ClientMessage and \
@@ -285,7 +280,8 @@ class InputListener(threading.Thread):
             if ev.xclient.data[0] in [xlib.FocusIn, xlib.FocusOut]:
                 # we do not keep track of multiple XICs, just reset
                 xic = xlib.Xutf8ResetIC(self._kbd_replay_xic)
-                if xic is not None: xlib.XFree(xic)
+                if xic is not None:
+                    xlib.XFree(xic)
             return
         elif ev.type in [xlib.KeyPress, xlib.KeyRelease]:
             # fake keyboard event data for XFilterEvent
@@ -304,8 +300,8 @@ class InputListener(threading.Thread):
         data = KeyData()
         data.filtered = filtered
         data.pressed = (ev.type == xlib.KeyPress)
-        data.repeated = (ev.type == self._kbd_last_ev.type and \
-                         ev.xkey.state == self._kbd_last_ev.xkey.state and \
+        data.repeated = (ev.type == self._kbd_last_ev.type and
+                         ev.xkey.state == self._kbd_last_ev.xkey.state and
                          ev.xkey.keycode == self._kbd_last_ev.xkey.keycode)
         data.mods_mask = ev.xkey.state
         data.keycod = ev.xkey.keycode
@@ -317,7 +313,6 @@ class InputListener(threading.Thread):
         self._event_processed(data)
         self._kbd_last_ev = ev
 
-
     def run(self):
         # control connection
         self.control_dpy = xlib.XOpenDisplay(None)
@@ -325,7 +320,8 @@ class InputListener(threading.Thread):
 
         # unmapped replay window
         self.replay_dpy = xlib.XOpenDisplay(None)
-        self.custom_atom = xlib.XInternAtom(self.replay_dpy, b"SCREENKEY", False)
+        self.custom_atom = xlib.XInternAtom(
+            self.replay_dpy, b"SCREENKEY", False)
         replay_fd = xlib.XConnectionNumber(self.replay_dpy)
         self.replay_win = create_replay_window(self.replay_dpy)
 
@@ -356,12 +352,16 @@ class InputListener(threading.Thread):
             dev_ranges.append([xlib.ButtonPress, xlib.ButtonRelease])
         if self.input_types & InputType.movement:
             dev_ranges.append([xlib.MotionNotify, xlib.MotionNotify])
-        self.record_ctx = record_context(self.control_dpy, ev_ranges, dev_ranges);
+        self.record_ctx = record_context(
+            self.control_dpy, ev_ranges, dev_ranges)
 
         record_dpy = xlib.XOpenDisplay(None)
         record_fd = xlib.XConnectionNumber(record_dpy)
         # we need to keep the record_ref alive(!)
-        record_ref = record_enable(record_dpy, self.record_ctx, self._event_received)
+        record_ref = record_enable(
+            record_dpy,
+            self.record_ctx,
+            self._event_received)
 
         # event loop
         self.lock.release()
@@ -407,30 +407,40 @@ class InputListener(threading.Thread):
         self._stop = True
         self.lock.release()
 
+
 if __name__ == '__main__':
-    keylog_filepath = expanduser("~")+"/.keylog.csv"
+    keylog_filepath = expanduser("~") + "/.keylog.csv"
     if not isfile(keylog_filepath):
-      with open(keylog_filepath,"w") as keylog_file:
-        b = [u"pressed", u"keycode", u"keysym", u"symbol", u"repr", u"repeated", u"mods_mask"]
-        print("%7s %7s %6s %16s %9s %8s %15s"%tuple(b))
-        keylog_file = keylog_file.write(', '.join(b)+u'\n')
+        with open(keylog_filepath, "w") as keylog_file:
+            b = [
+                u"pressed",
+                u"keycode",
+                u"keysym",
+                u"symbol",
+                u"repr",
+                u"repeated",
+                u"mods_mask"]
+            print("%7s %7s %6s %16s %9s %8s %15s" % tuple(b))
+            keylog_file = keylog_file.write(', '.join(b) + u'\n')
 
     def callback(data):
         values = {}
         for k in dir(data):
-            if k[0] == '_': continue
+            if k[0] == '_':
+                continue
             values[k] = getattr(data, k)
-            #print k, values[k]
+            # print k, values[k]
         if not values[u"filtered"]:
-          #values[u"mods_mask"] = bin(values[u"mods_mask"])[2:]
-          values[u"pressed"] = int(values[u"pressed"])
-          values[u"repeated"] = int(values[u"repeated"])
-          values[u"string"] = repr(values[u"string"])
-          values[u"symbol"] = values["symbol"].decode("utf-8")
-          b = [str(values[k]) for k in [u"pressed", u"keycod", u"keysym", u"symbol", u"string", u"repeated", u"mods_mask"]]
-          print("%7s %7s %6s %16s %9s %8s %15s"%tuple(b))
-          with open(keylog_filepath,"a") as keylog_file:
-              keylog_file.write(', '.join(b) + u'\n')
+            #values[u"mods_mask"] = bin(values[u"mods_mask"])[2:]
+            values[u"pressed"] = int(values[u"pressed"])
+            values[u"repeated"] = int(values[u"repeated"])
+            values[u"string"] = repr(values[u"string"])
+            values[u"symbol"] = values["symbol"].decode("utf-8")
+            b = [str(values[k]) for k in [u"pressed", u"keycod",
+                                          u"keysym", u"symbol", u"string", u"repeated", u"mods_mask"]]
+            print("%7s %7s %6s %16s %9s %8s %15s" % tuple(b))
+            with open(keylog_filepath, "a") as keylog_file:
+                keylog_file.write(', '.join(b) + u'\n')
 
     glib.threads_init()
     kl = InputListener(callback)
