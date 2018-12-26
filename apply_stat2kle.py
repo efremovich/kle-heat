@@ -34,7 +34,7 @@ def val2rgb_gradient(minval, maxval, val, colors):
                                             (g2 - g1)), int(b1 + f * (b2 - b1))
 
 
-def astro_intensity(s, r, h, g, l):
+def cubehelix(s, r, h, g, l):
     psi = 2 * np.pi * ((s / 3) + (r * l))
     lg = l ** g
     return np.round((((h * lg * ((1 - lg) / 2))
@@ -260,7 +260,7 @@ def main():
                         val2rgb_gradient(
                             minval, maxval, c, gradient_colors))
                     #norm_c = constrain(0, 1, c/maxval)
-                    #col = format_rgb(astro_intensity(0,5,1,0.2,norm_c))
+                    #col = format_rgb(cubehelix(0,5,1,0.2,norm_c))
                     layout[i].insert(j, {"c": col})
                     inserted = True
                     cntr += 1
