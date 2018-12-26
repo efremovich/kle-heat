@@ -434,7 +434,10 @@ if __name__ == '__main__':
             #values[u"mods_mask"] = bin(values[u"mods_mask"])[2:]
             values[u"pressed"] = int(values[u"pressed"])
             values[u"repeated"] = int(values[u"repeated"])
-            values[u"string"] = repr(values[u"string"])
+            if values[u"string"] == "'":
+                values[u"string"] = '\'\\\'\''  # repr of ' with ' string, not " as usual to make all strings in one format
+            else:
+                values[u"string"] = repr(values[u"string"])
             values[u"symbol"] = values["symbol"].decode("utf-8")
             b = [str(values[k]) for k in [u"pressed", u"keycod", u"keysym", u"symbol", u"string", u"repeated", u"mods_mask"]]
             print("%7s %7s %6s %16s %9s %8s %15s" % tuple(b))

@@ -48,7 +48,6 @@ def parse_args():
     args = parser.parse_args()
     return args.keylog_path, args.stat_path
 
-
 def main():
     keylog_path, stat_path = parse_args()
     keylog = read_keylog(keylog_path)

@@ -130,12 +130,14 @@ def main():
 
     #minval = keystat.cnt.max()
     #maxval = 0
+    #[keystat.iso_next_group == 1]
+    #[keystat.iso_next_group == 1]
     minval = keystat.cnt.min()
     maxval = keystat.cnt.max()
-    #gradient_colors = [(0xcc, 0xcc, 0xcc), (0xFF,0xFF,0x00), (0xdd,0x11,0x26)]
-    #gradient_colors = [(0x00, 0x00, 0xFF), (0x00,0xFF,0x00), (0xFF,0x00,0x00)]
-    gradient_colors = [
-        (0x00, 0xba, 0xb4), (0xFF, 0xD1, 0x00), (0xcb, 0x2f, 0x2a)]
+    #gradient_colors = [(0x00, 0xba, 0xb4), (0xCC, 0xD1, 0x00), (0xFF, 0x00, 0x00)]
+    gradient_colors = [(0x00, 0xba, 0xb4), (0xFF,0xD1,0x00), (0xcb, 0x2f, 0x2a)]
+    #gradient_colors = [(0xcc, 0xcc, 0xcc), (0xFF, 0xD1, 0x00), (0xcb, 0x2f, 0x2a)]
+    #gradient_colors = [(0xcc, 0xcc, 0xcc), (0xCC, 0xD1, 0x00), (0xFF, 0x00, 0x00)]
     #gradient_colors = [(0xFF, 0xFF, 0xFF), (0x60,0x60,0x60), (0x40, 0x40, 0x40)]
 
     a = 4
@@ -145,14 +147,14 @@ def main():
     r_lower_cnt = 0
     l_lower_cnt = 0
 
-    count_keys = 0
+    #count_keys = 0
     for i, line in enumerate(layout):
         if isinstance(line, list):
             for j, p in enumerate(line):
                 if isinstance(p, dict):
                     a = p.get('a', a)
                 elif isinstance(p, str):
-                    count_keys += 1
+                    #count_keys += 1
                     cnt = 0
                     d_p = decomp_label(a, p)
                     hand = d_p[9]
@@ -240,7 +242,7 @@ def main():
 
     a = 4
     inserted = False
-    cntr = 0
+    #cntr = 0
     for i, line in enumerate(layout):
         if isinstance(line, list):
             for j, p in enumerate(line):
@@ -256,11 +258,14 @@ def main():
                     col = format_rgb(
                         val2rgb_gradient(
                             minval, maxval, c, gradient_colors))
-                    #norm_c = constrain(0, 1, c/maxval)
-                    #col = format_rgb(cubehelix(0,5,1,0.2,norm_c))
+                    #col = format_rgb(
+                    #    val2rgb_gradient(
+                    #        0, count_keys, cntr, gradient_colors))
+                    #norm_c = constrain(0, 1, cntr/count_keys)
+                    #col = format_rgb(cubehelix(0,1,1,0.8,norm_c))
                     layout[i].insert(j, {"c": col})
                     inserted = True
-                    cntr += 1
+                    #cntr += 1
 
     write_heatmap(layout, output_path)
 
