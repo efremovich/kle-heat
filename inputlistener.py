@@ -32,11 +32,11 @@
 # Drop me a line if you ever find this comment helpful, as finding a decent
 # solution was not trivial -- YD 21/08/2015.
 
+from __future__ import unicode_literals, absolute_import
 import select
 import warnings
 import threading
 import sys
-from __future__ import unicode_literals, absolute_import
 
 if __name__ == '__main__':
     from os.path import expanduser, isfile
@@ -421,7 +421,7 @@ if __name__ == '__main__':
                 u"repeated",
                 u"mods_mask"]
             print("%7s %7s %6s %16s %9s %8s %15s" % tuple(b))
-            keylog_file = keylog_file.write(', '.join(b) + u'\n')
+            keylog_file = keylog_file.write('\t'.join(b) + u'\n')
 
     def callback(data):
         values = {}
@@ -436,11 +436,10 @@ if __name__ == '__main__':
             values[u"repeated"] = int(values[u"repeated"])
             values[u"string"] = repr(values[u"string"])
             values[u"symbol"] = values["symbol"].decode("utf-8")
-            b = [str(values[k]) for k in [u"pressed", u"keycod",
-                                          u"keysym", u"symbol", u"string", u"repeated", u"mods_mask"]]
+            b = [str(values[k]) for k in [u"pressed", u"keycod", u"keysym", u"symbol", u"string", u"repeated", u"mods_mask"]]
             print("%7s %7s %6s %16s %9s %8s %15s" % tuple(b))
             with open(keylog_filepath, "a") as keylog_file:
-                keylog_file.write(', '.join(b) + u'\n')
+                keylog_file.write('\t'.join(b) + u'\n')
 
     glib.threads_init()
     kl = InputListener(callback)

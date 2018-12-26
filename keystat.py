@@ -7,13 +7,13 @@ import pandas as pd
 import argparse
 
 
-def read_keylog(path, sep=", "):
-    return pd.read_csv(path, delimiter=sep, header=0, engine='python')
+def read_keylog(path, sep='\t'):
+    return pd.read_csv(path, delimiter=sep, header=0)
 
 
 def calc_press_stat(keylog):  # optimize
     keylog["iso_next_group"] = keylog["mods_mask"].map(
-        lambda x: (int(str(x), 2) >> 13) & 1)
+        lambda x: (x >> 13) & 1)
     data = keylog[(keylog["pressed"] == 1) &
                   (keylog["repeated"] == 0)] \
         .groupby(["symbol", "iso_next_group"]) \
@@ -28,14 +28,8 @@ def calc_press_stat(keylog):  # optimize
     return data
 
 
-def write_stat(stat, path, sep=", "):
-    stat.to_csv(path, sep='\t', encoding='utf-8', index=False)
-    with open(path, "r+") as stat_f:
-        stat_s = stat_f.read()
-        stat_s = sub('\t', sep, stat_s)
-        stat_f.seek(0)
-        stat_f.write(stat_s)
-        stat_f.truncate()
+def write_stat(stat, path, sep='\t'):
+    stat.to_csv(path, sep=sep, encoding="utf-8", index=False)
 
 
 def parse_args():
@@ -62,10 +56,7 @@ def main():
     keylog.repr = keylog.repr.map(
         lambda x: (
             lambda y: repr(
-                y.upper()) if isinstance(
-                y,
-                str) else y)(
-                    eval(x)))
+                y.upper()) if isinstance(y, str) else y)(eval(x)))
     write_stat(calc_press_stat(keylog), stat_path)
 
 

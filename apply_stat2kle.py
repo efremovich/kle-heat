@@ -56,8 +56,8 @@ def format_rgb(col):
     return "#%02x%02x%02x" % tuple(col)
 
 
-def read_keystat(path, sep=", "):
-    keystat = pd.read_csv(path, delimiter=sep, header=0, engine='python')
+def read_keystat(path, sep='\t'):
+    keystat = pd.read_csv(path, delimiter=sep, header=0)
     keystat.repr = keystat.repr.map(lambda x: eval(x))
     return keystat
 
