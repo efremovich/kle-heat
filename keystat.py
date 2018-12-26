@@ -48,17 +48,16 @@ def parse_args():
     args = parser.parse_args()
     return args.keylog_path, args.stat_path
 
+#def main():
+keylog_path, stat_path = parse_args()
+keylog = read_keylog(keylog_path)
+keylog.symbol = keylog.symbol.map(lambda x: x.upper())
+keylog.repr = keylog.repr.map(
+    lambda x: (
+        lambda y: repr(
+            y.upper()) if isinstance(y, str) else y)(eval(x)))
+write_stat(calc_press_stat(keylog), stat_path)
 
-def main():
-    keylog_path, stat_path = parse_args()
-    keylog = read_keylog(keylog_path)
-    keylog.symbol = keylog.symbol.map(lambda x: x.upper())
-    keylog.repr = keylog.repr.map(
-        lambda x: (
-            lambda y: repr(
-                y.upper()) if isinstance(y, str) else y)(eval(x)))
-    write_stat(calc_press_stat(keylog), stat_path)
 
-
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#    main()
