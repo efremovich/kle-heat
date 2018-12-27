@@ -192,7 +192,7 @@ def main():
                     hand = d_p[hand_idx]
 
                     for idx, k in enumerate(d_p[legends_idxs]):
-                        if k and idx:
+                        if k:
                             for s_k in k.split(" "):
                                 legend_cnt = 0
                                 s_k = s_k.upper()
@@ -239,6 +239,7 @@ def main():
                                         r_lower_i, r_lower_j, r_lower_a = i, j, a
                                     else:
                                         lower_i, lower_j, lower_a = i, j, a
+
                     c = list_get(d_p, counter_idx, 0)
                     c = 0 if c is '' else int(c)
                     d_p[counter_idx] = cnt + c
