@@ -1,11 +1,34 @@
 #!/usr/bin/python
 # -*-coding:utf-8-*-
 from os.path import expanduser
-from misc import int_rgb2tuple, try_int, list_get, format_rgb, val2rgb_gradient
+from misc import int_rgb2tuple, try_int, list_get, format_rgb, val2rgb_gradient, comp_label, decomp_label
 import json
 import pandas as pd
 import numpy as np
 import argparse
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Draws heatmap on keyboard-layout-editor json')
+    parser.add_argument('-i', action='store', dest='stat_path',
+                        help='keystat csv file path; default ~/.keystat.csv',
+                        default=expanduser("~") + "/.keystat.csv")
+    parser.add_argument(
+        '-l',
+        action='store',
+        dest='layout_path',
+        required=True,
+        help='keyboard-layout-editor json path')
+    parser.add_argument(
+        '-o',
+        action='store',
+        dest='output_path',
+        required=True,
+        help='result kle json path')
+    args = parser.parse_args()
+    return args.stat_path, args.layout_path, args.output_path
+
 
 def read_keystat(path, sep='\t'):
     keystat = pd.read_csv(path, delimiter=sep, header=0)
@@ -28,32 +51,6 @@ def read_layout(path):
 def write_heatmap(data, path):
     with open(path, 'w') as f:
         json.dump(data, f)
-
-
-LABEL_MAP = [
-    [ 0, 6, 2, 8, 9,11, 3, 5, 1, 4, 7,10], #0 = no centering             0  1  2
-    [ 1, 7,-1,-1, 9,11, 4,-1,-1,-1,-1,10], #1 = center x                 3  4  5
-    [ 3,-1, 5,-1, 9,11,-1,-1, 4,-1,-1,10], #2 = center y                 6  7  8
-    [ 4,-1,-1,-1, 9,11,-1,-1,-1,-1,-1,10], #3 = center x & y             -------
-    [ 0, 6, 2, 8,10,-1, 3, 5, 1, 4, 7,-1], #4 = center front (default)   9 10 11
-    [ 1, 7,-1,-1,10,-1, 4,-1,-1,-1,-1,-1], #5 = center front & x
-    [ 3,-1, 5,-1,10,-1,-1,-1, 4,-1,-1,-1], #6 = center front & y
-    [ 4,-1,-1,-1,10,-1,-1,-1,-1,-1,-1,-1], #7 = center front & x & y
-]
-
-
-def decomp_label(a, l):
-    r = [''] * 12
-    for i, v in zip(LABEL_MAP[a], l.split('\n')):
-        if i >= 0:
-            r[i] = v
-    return r
-
-
-def comp_label(a, l):
-    return '\n'.join(str(l[i]) if i >= 0 else ''
-                     for i
-                     in LABEL_MAP[a]).rstrip('\n')
 
 
 def count_keypresses(layout, keystat):
@@ -113,7 +110,6 @@ def count_keypresses(layout, keystat):
             c = try_int(list_get(d_p, COUNTER_IDX, 0))
             d_p[COUNTER_IDX] = counter + c
             layout[i][j] = comp_label(a, d_p)
-
     return layout
 
 def calc_min_max_keypresses(layout, keystat):
@@ -165,28 +161,6 @@ def color_keys(layout, minval, maxval):
                     inserted = True
                     cntr += 1
     return layout
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description='Draws heatmap on keyboard-layout-editor json')
-    parser.add_argument('-i', action='store', dest='stat_path',
-                        help='keystat csv file path; default ~/.keystat.csv',
-                        default=expanduser("~") + "/.keystat.csv")
-    parser.add_argument(
-        '-l',
-        action='store',
-        dest='layout_path',
-        required=True,
-        help='keyboard-layout-editor json path')
-    parser.add_argument(
-        '-o',
-        action='store',
-        dest='output_path',
-        required=True,
-        help='result kle json path')
-    args = parser.parse_args()
-    return args.stat_path, args.layout_path, args.output_path
 
 ### Globals, need to plase them in settings file
 

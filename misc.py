@@ -90,3 +90,27 @@ def cubehelix(s, r, h, g, l):
 def format_rgb(col):
     return "#%02x%02x%02x" % tuple(col)
 
+LABEL_MAP = [
+    [ 0, 6, 2, 8, 9,11, 3, 5, 1, 4, 7,10], #0 = no centering             0  1  2
+    [ 1, 7,-1,-1, 9,11, 4,-1,-1,-1,-1,10], #1 = center x                 3  4  5
+    [ 3,-1, 5,-1, 9,11,-1,-1, 4,-1,-1,10], #2 = center y                 6  7  8
+    [ 4,-1,-1,-1, 9,11,-1,-1,-1,-1,-1,10], #3 = center x & y             -------
+    [ 0, 6, 2, 8,10,-1, 3, 5, 1, 4, 7,-1], #4 = center front (default)   9 10 11
+    [ 1, 7,-1,-1,10,-1, 4,-1,-1,-1,-1,-1], #5 = center front & x
+    [ 3,-1, 5,-1,10,-1,-1,-1, 4,-1,-1,-1], #6 = center front & y
+    [ 4,-1,-1,-1,10,-1,-1,-1,-1,-1,-1,-1], #7 = center front & x & y
+]
+
+
+def decomp_label(a, l):
+    r = [''] * 12
+    for i, v in zip(LABEL_MAP[a], l.split('\n')):
+        if i >= 0:
+            r[i] = v
+    return r
+
+
+def comp_label(a, l):
+    return '\n'.join(str(l[i]) if i >= 0 else ''
+                     for i
+                     in LABEL_MAP[a]).rstrip('\n')
