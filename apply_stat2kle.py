@@ -15,11 +15,31 @@ def constrain(a, b, x):
     return min(b, max(a, x))
 
 
+def remap(in_min, in_max, out_min, out_max, x):
+    """Re-maps a number from one range to another.
+    That is, a value of fromLow would get mapped to toLow,
+    a value of fromHigh to toHigh, values in-between
+    to values in-between, etc."""
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+
+
 def list_get(l, idx, default):
     try:
         return l[idx]
     except IndexError:
         return default
+
+
+def stepped_gradient(minval, maxval, val, colors):
+    return colors[int(round(remap(minval, maxval, 0, len(colors) - 1, constrain(minval, maxval, val))))]
+
+
+def bw_gradient(minval, maxval, val):
+    return [remap(minval, maxval, 255, 0, val)]*3
+
+
+def int_rgb2tuple(c):
+    return (c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF
 
 
 def val2rgb_gradient(minval, maxval, val, colors):
@@ -134,123 +154,170 @@ def main():
     keystat = read_keystat(stat_path)
     layout = read_layout(layout_path)
 
-    #minval = keystat.cnt.max()
-    #maxval = 0
-    #[keystat.iso_next_group == 1]
-    #[keystat.iso_next_group == 1]
-    minval = keystat.cnt.min()
-    maxval = keystat.cnt.max()
-    #gradient_colors = [(0x00, 0xba, 0xb4), (0xCC, 0xD1, 0x00), (0xFF, 0x00, 0x00)]
-    gradient_colors = [(0x00, 0xba, 0xb4), (0xFF,0xD1,0x00), (0xcb, 0x2f, 0x2a)]
-    #gradient_colors = [(0xcc, 0xcc, 0xcc), (0xFF, 0xD1, 0x00), (0xcb, 0x2f, 0x2a)]
-    #gradient_colors = [(0xcc, 0xcc, 0xcc), (0xCC, 0xD1, 0x00), (0xFF, 0x00, 0x00)]
-    #gradient_colors = [(0xFF, 0xFF, 0xFF), (0x60,0x60,0x60), (0x40, 0x40, 0x40)]
+    #gradient_colors = [0x00bab4, 0xCCD100, 0xFF0000] # cayan, green, yellow, red
+    #gradient_colors = [0xcccccc,0x00FFFF, 0x00FF00, 0xFFFF00, 0xFF0000, 0xFF0000] # toxic rainbow
+    gradient_colors = [0xcccccc,0xFEEB65, 0xE4521B, 0xcd2f2c] # pretty yellow orange orange red
+    #gradient_colors = [0xcccccc, 0xFFD100, 0xcb2f2a]          #        yellow orange red
+    #gradient_colors = [0xFFFFFF, 0x606060, 0x404040] # grayscale
+    #gradient_colors = [0xcccccc, 0xffe08d, 0xf9cd31,0xf9cd31, 0xff6d1a] # mine keycaps
+    gradient_colors = list(map(int_rgb2tuple, gradient_colors))
 
-    a = 4
+    default_a = 4
+    hand_idx = 9
+    counter_idx = 10
+    legends_idxs = slice(0, 9)
+    iso_default_gr_idxs = [0, 1, 2]
+    iso_next_gr_idxs = [3, 4, 5]
+    raise_layer_idxs = [2, 5, 8]
+    lower_layer_idxs = [0, 3, 6]
 
     r_raise_cnt = 0
     l_raise_cnt = 0
+    raise_cnt = 0
+
     r_lower_cnt = 0
     l_lower_cnt = 0
-
-    #count_keys = 0
+    lower_cnt = 0
+    count_keys = 0
+    a = default_a
     for i, line in enumerate(layout):
         if isinstance(line, list):
             for j, p in enumerate(line):
                 if isinstance(p, dict):
                     a = p.get('a', a)
                 elif isinstance(p, str):
-                    #count_keys += 1
-                    cnt = 0
                     d_p = decomp_label(a, p)
-                    hand = d_p[9]
-                    hold = d_p[7]
+                    count_keys += 1
+                    cnt = 0
+                    hand = d_p[hand_idx]
 
-                    for idx, k in enumerate(d_p[:-3]):
-                        if k:
+                    for idx, k in enumerate(d_p[legends_idxs]):
+                        if k and idx:
                             for s_k in k.split(" "):
                                 legend_cnt = 0
                                 s_k = s_k.upper()
 
                                 s = keystat[(keystat.symbol == s_k)]
                                 if s.values.size == 0:
-                                    if idx in [3, 4, 5]:
-                                        s = keystat[(keystat.repr == s_k) &
-                                                    (keystat.iso_next_group == 1)]
-                                    elif idx in [0, 1, 2]:
+                                    if idx in iso_default_gr_idxs:
                                         s = keystat[(keystat.repr == s_k) &
                                                     (keystat.iso_next_group == 0)]
+                                    elif idx in iso_next_gr_idxs:
+                                        s = keystat[(keystat.repr == s_k) &
+                                                    (keystat.iso_next_group == 1)]
 
                                 if s.values.size > 0:
                                     legend_cnt = s.cnt.values.sum()
                                     cnt += legend_cnt
 
-                                if idx in [0, 3, 6] and hand == 'r':
-                                    l_lower_cnt += legend_cnt
-                                elif idx in [2, 5, 8] and hand == 'r':
-                                    l_raise_cnt += legend_cnt
-                                elif idx in [2, 5, 8] and hand == 'l':
-                                    r_raise_cnt += legend_cnt
-                                elif idx in [0, 3, 6] and hand == 'l':
-                                    r_lower_cnt += legend_cnt
+                                if idx in lower_layer_idxs:
+                                    if hand == 'r':
+                                        l_lower_cnt += legend_cnt
+                                    elif hand == 'l':
+                                        r_lower_cnt += legend_cnt
+                                    else:
+                                        lower_cnt += legend_cnt
+                                elif idx in raise_layer_idxs:
+                                    if hand == 'r':
+                                        l_raise_cnt += legend_cnt
+                                    elif hand == 'l':
+                                        r_raise_cnt += legend_cnt
+                                    else:
+                                        raise_cnt += legend_cnt
 
-                    if hold.upper() == "RAISE" and hand == 'l':
-                        l_raise_i, l_raise_j, l_raise_a = i, j, a
-                    elif hold.upper() == "RAISE" and hand == 'r':
-                        r_raise_i, r_raise_j, r_raise_a = i, j, a
-                    elif hold.upper() == "LOWER" and hand == 'l':
-                        l_lower_i, l_lower_j, l_lower_a = i, j, a
-                    elif hold.upper() == "LOWER" and hand == 'r':
-                        r_lower_i, r_lower_j, r_lower_a = i, j, a
-
-                    c = list_get(d_p, 10, 0)
+                                if s_k.upper() == "RAISE":
+                                    if hand == 'l':
+                                        l_raise_i, l_raise_j, l_raise_a = i, j, a
+                                    elif hand == 'r':
+                                        r_raise_i, r_raise_j, r_raise_a = i, j, a
+                                    else:
+                                        raise_i, raise_j, raise_a = i, j, a
+                                elif s_k.upper() == "LOWER":
+                                    if hand == 'l':
+                                        l_lower_i, l_lower_j, l_lower_a = i, j, a
+                                    elif hand == 'r':
+                                        r_lower_i, r_lower_j, r_lower_a = i, j, a
+                                    else:
+                                        lower_i, lower_j, lower_a = i, j, a
+                    c = list_get(d_p, counter_idx, 0)
                     c = 0 if c is '' else int(c)
-                    d_p[10] = cnt + c
+                    d_p[counter_idx] = cnt + c
                     layout[i][j] = comp_label(a, d_p)
 
     try:
         d_p = decomp_label(r_raise_a, layout[r_raise_i][r_raise_j])
-        c = list_get(d_p, 10, 0)
+        c = list_get(d_p, counter_idx, 0)
         c = 0 if c is '' else int(c)
-        d_p[10] = r_raise_cnt + c
+        d_p[counter_idx] = r_raise_cnt + c
         layout[r_raise_i][r_raise_j] = comp_label(r_raise_a, d_p)
+    except NameError:
+        pass
 
+    try:
         d_p = decomp_label(l_raise_a, layout[l_raise_i][l_raise_j])
-        c = list_get(d_p, 10, 0)
+        c = list_get(d_p, counter_idx, 0)
         c = 0 if c is '' else int(c)
-        d_p[10] = l_raise_cnt + c
+        d_p[counter_idx] = l_raise_cnt + c
         layout[l_raise_i][l_raise_j] = comp_label(l_raise_a, d_p)
+    except NameError:
+        pass
 
+    try:
+        d_p = decomp_label(raise_a, layout[raise_i][raise_j])
+        c = list_get(d_p, counter_idx, 0)
+        c = 0 if c is '' else int(c)
+        d_p[counter_idx] = raise_cnt + c
+        layout[raise_i][raise_j] = comp_label(raise_a, d_p)
+    except NameError:
+        pass
+
+    try:
         d_p = decomp_label(r_lower_a, layout[r_lower_i][r_lower_j])
-        c = list_get(d_p, 10, 0)
+        c = list_get(d_p, counter_idx, 0)
         c = 0 if c is '' else int(c)
-        d_p[10] = r_lower_cnt + c
+        d_p[counter_idx] = r_lower_cnt + c
         layout[r_lower_i][r_lower_j] = comp_label(r_lower_a, d_p)
+    except NameError:
+        pass
 
+    try:
         d_p = decomp_label(l_lower_a, layout[l_lower_i][l_lower_j])
-        c = list_get(d_p, 10, 0)
+        c = list_get(d_p, counter_idx, 0)
         c = 0 if c is '' else int(c)
-        d_p[10] = l_lower_cnt + c
+        d_p[counter_idx] = l_lower_cnt + c
         layout[l_lower_i][l_lower_j] = comp_label(l_lower_a, d_p)
     except NameError:
         pass
 
-     # a = 4
-     # for i, line in enumerate(layout):
-     #   if isinstance(line, list):
-     #     for j, p in enumerate(line):
-     #       if isinstance(p, dict):
-     #         a = p.get('a', a)
-     #       elif isinstance(p, str):
-     #         d_p = decomp_label(a, p)
-     #         c = list_get(d_p, 10, 0)
-     #         c = 0 if c is '' else int(c)
-     #         minval = min(c, minval)
-     #         maxval = max(c, maxval)
+    try:
+        d_p = decomp_label(lower_a, layout[lower_i][lower_j])
+        c = list_get(d_p, counter_idx, 0)
+        c = 0 if c is '' else int(c)
+        d_p[counter_idx] = lower_cnt + c
+        layout[lower_i][lower_j] = comp_label(lower_a, d_p)
+    except NameError:
+        pass
 
-    a = 4
+    minval = keystat.cnt.min()
+    maxval = keystat.cnt.max()
+    #minval = keystat.cnt.max()
+    #maxval = 0
+    #a = default_a
+    #for i, line in enumerate(layout):
+    #    if isinstance(line, list):
+    #        for j, p in enumerate(line):
+    #            if isinstance(p, dict):
+    #                a = p.get('a', a)
+    #            elif isinstance(p, str):
+    #                d_p = decomp_label(a, p)
+    #                c = list_get(d_p, counter_idx, 0)
+    #                c = 0 if c is '' else int(c)
+    #                minval = min(c, minval)
+    #                maxval = max(c, maxval)
+
+    a = default_a
     inserted = False
-    #cntr = 0
+    cntr = 0
     for i, line in enumerate(layout):
         if isinstance(line, list):
             for j, p in enumerate(line):
@@ -261,8 +328,11 @@ def main():
                     a = p.get('a', a)
                 elif isinstance(p, str):
                     d_p = decomp_label(a, p)
-                    c = list_get(d_p, 10, 0)
+                    c = list_get(d_p, counter_idx, 0)
                     c = 0 if c is '' else int(c)
+                    #col = format_rgb(
+                    #    stepped_gradient(
+                    #        minval, maxval, c, gradient_colors))
                     col = format_rgb(
                         val2rgb_gradient(
                             minval, maxval, c, gradient_colors))
@@ -273,7 +343,7 @@ def main():
                     #col = format_rgb(cubehelix(0,1,1,0.8,norm_c))
                     layout[i].insert(j, {"c": col})
                     inserted = True
-                    #cntr += 1
+                    cntr += 1
 
     write_heatmap(layout, output_path)
 
