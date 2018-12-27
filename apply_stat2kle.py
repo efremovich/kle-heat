@@ -174,17 +174,17 @@ def main():
                [11, [2, 5, 8]]]
 
     fn_names2abbrev = {
-        "LOWER":   "l" ,
+        "LOWER"  : "l" ,
         "LOWER_L": "ll",
         "LOWER_R": "lr",
-        "RAISE":   "r" ,
+        "RAISE"  : "r" ,
         "RAISE_L": "rl",
         "RAISE_R": "rr",
-        "FN":      "f" ,
-        "FN1":     "f1",
-        "FN2":     "f2",
-        "FN3":     "f3",
-        "FN4":     "f4"}
+        "FN"     : "f" ,
+        "FN1"    : "f1",
+        "FN2"    : "f2",
+        "FN3"    : "f3",
+        "FN4"    : "f4"}
 
     fn_abbrev2names = {v: k for k, v in fn_names2abbrev.items()}
 
@@ -243,7 +243,6 @@ def main():
     for fn, params in fn_params.items():
         if all(v is not None for v in params.values()):
             i, j, a, counter = params["i"], params["j"], params["a"], params["counter"]
-            print(i,j,a,counter)
             d_p = decomp_label(a, layout[i][j])
             c = list_get(d_p, counter_idx, 0)
             c = 0 if c is '' else int(c)
