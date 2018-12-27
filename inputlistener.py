@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 # Distributed under the GNU GPLv3+ license, WITHOUT ANY WARRANTY.
 # Copyright(c) 2015: wave++ "Yuri D'Elia" <wavexx@thregr.org>
