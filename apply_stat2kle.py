@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*-coding:utf-8-*-
 from os.path import expanduser
-import misc
+from misc import int_rgb2tuple, try_int, list_get, format_rgb, val2rgb_gradient
 import json
 import pandas as pd
 import numpy as np
@@ -58,7 +58,7 @@ def comp_label(a, l):
 
 def count_keypresses(layout, keystat):
     #count_keys = 0
-    a = default_a
+    a = DEFAULT_A
     for i, line in enumerate(layout):
         if isinstance(line, list):
             for j, p in enumerate(line):
@@ -68,9 +68,9 @@ def count_keypresses(layout, keystat):
                     d_p = decomp_label(a, p)
                     #count_keys += 1
                     cnt = 0
-                    hand = d_p[hand_idx]
+                    hand = d_p[HAND_IDX]
 
-                    for idx, k in enumerate(d_p[legends_idxs]):
+                    for idx, k in enumerate(d_p[LEGENDS_IDXS]):
                         if k:
                             for s_k in k.split(" "):
                                 legend_cnt = 0
@@ -78,7 +78,7 @@ def count_keypresses(layout, keystat):
 
                                 s = keystat[(keystat.symbol == s_k)]
                                 if s.values.size == 0:
-                                    for iso_gr, iso_idxs in enumerate(iso_gr_idxs):
+                                    for iso_gr, iso_idxs in enumerate(ISO_GR_IDXS):
                                         if idx in iso_idxs:
                                             s = keystat[(keystat.repr == s_k) &
                                                         (keystat.iso_next_group == iso_gr)]
@@ -88,30 +88,30 @@ def count_keypresses(layout, keystat):
                                     legend_cnt = s.cnt.values.sum()
                                     cnt += legend_cnt
 
-                                for fn_abbr_idx, idxs in fn_idxs:
+                                for fn_abbr_idx, idxs in FN_IDXS:
                                     if idx in idxs:
                                         fn_abbr = d_p[fn_abbr_idx]
-                                        if fn_abbr in fn_params:
-                                            fn_params[fn_abbr]["counter"] += legend_cnt
+                                        if fn_abbr in FN_PARAMS:
+                                            FN_PARAMS[fn_abbr]["counter"] += legend_cnt
                                             break
 
-                                if s_k in fn_names2abbrev:
-                                    abbrev = fn_names2abbrev[s_k]
-                                    fn_params[abbrev]["i"] = i
-                                    fn_params[abbrev]["j"] = j
-                                    fn_params[abbrev]["a"] = a
+                                if s_k in FN_NAMES2ABBREV:
+                                    abbrev = FN_NAMES2ABBREV[s_k]
+                                    FN_PARAMS[abbrev]["i"] = i
+                                    FN_PARAMS[abbrev]["j"] = j
+                                    FN_PARAMS[abbrev]["a"] = a
 
 
-                    c = try_int(list_get(d_p, counter_idx, 0))
-                    d_p[counter_idx] = cnt + c
+                    c = try_int(list_get(d_p, COUNTER_IDX, 0))
+                    d_p[COUNTER_IDX] = cnt + c
                     layout[i][j] = comp_label(a, d_p)
 
-    for fn, params in fn_params.items():
+    for fn, params in FN_PARAMS.items():
         if all(v is not None for v in params.values()):
             i, j, a, counter = params["i"], params["j"], params["a"], params["counter"]
             d_p = decomp_label(a, layout[i][j])
-            c = try_int(list_get(d_p, counter_idx, 0))
-            d_p[counter_idx] = counter + c
+            c = try_int(list_get(d_p, COUNTER_IDX, 0))
+            d_p[COUNTER_IDX] = counter + c
             layout[i][j] = comp_label(a, d_p)
 
     return layout
@@ -121,7 +121,7 @@ def calc_min_max_keypresses(layout, keystat):
     maxval = keystat.cnt.max()
     #minval = None
     #maxval = None
-    #a = default_a
+    #a = DEFAULT_A
     #for i, line in enumerate(layout):
     #    if isinstance(line, list):
     #        for j, p in enumerate(line):
@@ -130,13 +130,13 @@ def calc_min_max_keypresses(layout, keystat):
     #            elif isinstance(p, str):
     #                d_p = decomp_label(a, p)
 
-    #                c = try_int(list_get(d_p, counter_idx, 0))
+    #                c = try_int(list_get(d_p, COUNTER_IDX, 0))
     #                minval = min(c, minval) if minval is not None else c
     #                maxval = max(c, maxval) if maxval is not None else c
     return minval, maxval
 
 def color_keys(layout, minval, maxval):
-    a = default_a
+    a = DEFAULT_A
     inserted = False
     cntr = 0
     for i, line in enumerate(layout):
@@ -149,7 +149,7 @@ def color_keys(layout, minval, maxval):
                     a = p.get('a', a)
                 elif isinstance(p, str):
                     d_p = decomp_label(a, p)
-                    c = try_int(list_get(d_p, counter_idx, 0))
+                    c = try_int(list_get(d_p, COUNTER_IDX, 0))
                     #col = format_rgb(
                     #    stepped_gradient(
                     #        minval, maxval, c, gradient_colors))
@@ -198,18 +198,18 @@ gradient_colors = [0xcccccc,0xFEEB65, 0xE4521B, 0xcd2f2c] # pretty yellow orange
 #gradient_colors = [0xcccccc, 0xffe08d, 0xf9cd31,0xf9cd31, 0xff6d1a] # mine keycaps
 gradient_colors = list(map(int_rgb2tuple, gradient_colors))
 
-default_a = 4
-hand_idx = 9
-counter_idx = 10
+DEFAULT_A = 4
+HAND_IDX = 9
+COUNTER_IDX = 10
 
-legends_idxs = slice(0, 9)
-iso_gr_idxs = [[0, 1, 2],
+LEGENDS_IDXS = slice(0, 9)
+ISO_GR_IDXS = [[0, 1, 2],
                [3, 4, 5]]
 
-fn_idxs = [[9,  [0, 3, 6]],
+FN_IDXS = [[9,  [0, 3, 6]],
            [11, [2, 5, 8]]]
 
-fn_names2abbrev = {
+FN_NAMES2ABBREV = {
     "LOWER"  : "l" ,
     "LOWER_L": "ll",
     "LOWER_R": "lr",
@@ -222,10 +222,10 @@ fn_names2abbrev = {
     "FN3"    : "f3",
     "FN4"    : "f4"}
 
-fn_abbrev2names = {v: k for k, v in fn_names2abbrev.items()}
+FN_ABBREV2NAMES = {v: k for k, v in FN_NAMES2ABBREV.items()}
 
-fn_params = {abbrev: {"i": None, "j": None, "a": None, "counter": 0}
-             for abbrev in fn_abbrev2names}
+FN_PARAMS = {abbrev: {"i": None, "j": None, "a": None, "counter": 0}
+             for abbrev in FN_ABBREV2NAMES}
 
 ### Globals end
 
