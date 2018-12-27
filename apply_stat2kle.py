@@ -2,6 +2,7 @@
 # -*-coding:utf-8-*-
 from functools import partial
 from os.path import expanduser
+from collections import namedtuple
 import json
 import pandas as pd
 import numpy as np
@@ -147,7 +148,6 @@ def parse_args():
     args = parser.parse_args()
     return args.stat_path, args.layout_path, args.output_path
 
-
 def main():
     stat_path, layout_path, output_path = parse_args()
 
@@ -165,19 +165,32 @@ def main():
     default_a = 4
     hand_idx = 9
     counter_idx = 10
+
     legends_idxs = slice(0, 9)
-    iso_default_gr_idxs = [0, 1, 2]
-    iso_next_gr_idxs = [3, 4, 5]
-    raise_layer_idxs = [2, 5, 8]
-    lower_layer_idxs = [0, 3, 6]
+    iso_gr_idxs = [[0, 1, 2],
+                   [3, 4, 5]]
 
-    r_raise_cnt = 0
-    l_raise_cnt = 0
-    raise_cnt = 0
+    fn_idxs = [[9,  [0, 3, 6]],
+               [11, [2, 5, 8]]]
 
-    r_lower_cnt = 0
-    l_lower_cnt = 0
-    lower_cnt = 0
+    fn_names2abbrev = {
+        "LOWER":   "l" ,
+        "LOWER_L": "ll",
+        "LOWER_R": "lr",
+        "RAISE":   "r" ,
+        "RAISE_L": "rl",
+        "RAISE_R": "rr",
+        "FN":      "f" ,
+        "FN1":     "f1",
+        "FN2":     "f2",
+        "FN3":     "f3",
+        "FN4":     "f4"}
+
+    fn_abbrev2names = {v: k for k, v in fn_names2abbrev.items()}
+
+    fn_params = {abbrev: {"i": None, "j": None, "a": None, "counter": 0}
+                 for abbrev in fn_abbrev2names}
+
     count_keys = 0
     a = default_a
     for i, line in enumerate(layout):
@@ -199,105 +212,44 @@ def main():
 
                                 s = keystat[(keystat.symbol == s_k)]
                                 if s.values.size == 0:
-                                    if idx in iso_default_gr_idxs:
-                                        s = keystat[(keystat.repr == s_k) &
-                                                    (keystat.iso_next_group == 0)]
-                                    elif idx in iso_next_gr_idxs:
-                                        s = keystat[(keystat.repr == s_k) &
-                                                    (keystat.iso_next_group == 1)]
+                                    for iso_gr, iso_idxs in enumerate(iso_gr_idxs):
+                                        if idx in iso_idxs:
+                                            s = keystat[(keystat.repr == s_k) &
+                                                        (keystat.iso_next_group == iso_gr)]
+                                            break
 
                                 if s.values.size > 0:
                                     legend_cnt = s.cnt.values.sum()
                                     cnt += legend_cnt
 
-                                if idx in lower_layer_idxs:
-                                    if hand == 'r':
-                                        l_lower_cnt += legend_cnt
-                                    elif hand == 'l':
-                                        r_lower_cnt += legend_cnt
-                                    else:
-                                        lower_cnt += legend_cnt
-                                elif idx in raise_layer_idxs:
-                                    if hand == 'r':
-                                        l_raise_cnt += legend_cnt
-                                    elif hand == 'l':
-                                        r_raise_cnt += legend_cnt
-                                    else:
-                                        raise_cnt += legend_cnt
+                                for fn_abbr_idx, idxs in fn_idxs:
+                                    if idx in idxs:
+                                        fn_abbr = d_p[fn_abbr_idx]
+                                        if fn_abbr:
+                                            fn_params[fn_abbr]["counter"] += legend_cnt
 
-                                if s_k.upper() == "RAISE":
-                                    if hand == 'l':
-                                        l_raise_i, l_raise_j, l_raise_a = i, j, a
-                                    elif hand == 'r':
-                                        r_raise_i, r_raise_j, r_raise_a = i, j, a
-                                    else:
-                                        raise_i, raise_j, raise_a = i, j, a
-                                elif s_k.upper() == "LOWER":
-                                    if hand == 'l':
-                                        l_lower_i, l_lower_j, l_lower_a = i, j, a
-                                    elif hand == 'r':
-                                        r_lower_i, r_lower_j, r_lower_a = i, j, a
-                                    else:
-                                        lower_i, lower_j, lower_a = i, j, a
+                                if s_k in fn_names2abbrev:
+                                    abbrev = fn_names2abbrev[s_k]
+                                    fn_params[abbrev]["i"] = i
+                                    fn_params[abbrev]["j"] = j
+                                    fn_params[abbrev]["a"] = a
+
 
                     c = list_get(d_p, counter_idx, 0)
                     c = 0 if c is '' else int(c)
                     d_p[counter_idx] = cnt + c
                     layout[i][j] = comp_label(a, d_p)
 
-    try:
-        d_p = decomp_label(r_raise_a, layout[r_raise_i][r_raise_j])
-        c = list_get(d_p, counter_idx, 0)
-        c = 0 if c is '' else int(c)
-        d_p[counter_idx] = r_raise_cnt + c
-        layout[r_raise_i][r_raise_j] = comp_label(r_raise_a, d_p)
-    except NameError:
-        pass
+    for fn, params in fn_params.items():
+        if all(v is not None for v in params.values()):
+            i, j, a, counter = params["i"], params["j"], params["a"], params["counter"]
+            print(i,j,a,counter)
+            d_p = decomp_label(a, layout[i][j])
+            c = list_get(d_p, counter_idx, 0)
+            c = 0 if c is '' else int(c)
+            d_p[counter_idx] = counter + c
+            layout[i][j] = comp_label(a, d_p)
 
-    try:
-        d_p = decomp_label(l_raise_a, layout[l_raise_i][l_raise_j])
-        c = list_get(d_p, counter_idx, 0)
-        c = 0 if c is '' else int(c)
-        d_p[counter_idx] = l_raise_cnt + c
-        layout[l_raise_i][l_raise_j] = comp_label(l_raise_a, d_p)
-    except NameError:
-        pass
-
-    try:
-        d_p = decomp_label(raise_a, layout[raise_i][raise_j])
-        c = list_get(d_p, counter_idx, 0)
-        c = 0 if c is '' else int(c)
-        d_p[counter_idx] = raise_cnt + c
-        layout[raise_i][raise_j] = comp_label(raise_a, d_p)
-    except NameError:
-        pass
-
-    try:
-        d_p = decomp_label(r_lower_a, layout[r_lower_i][r_lower_j])
-        c = list_get(d_p, counter_idx, 0)
-        c = 0 if c is '' else int(c)
-        d_p[counter_idx] = r_lower_cnt + c
-        layout[r_lower_i][r_lower_j] = comp_label(r_lower_a, d_p)
-    except NameError:
-        pass
-
-    try:
-        d_p = decomp_label(l_lower_a, layout[l_lower_i][l_lower_j])
-        c = list_get(d_p, counter_idx, 0)
-        c = 0 if c is '' else int(c)
-        d_p[counter_idx] = l_lower_cnt + c
-        layout[l_lower_i][l_lower_j] = comp_label(l_lower_a, d_p)
-    except NameError:
-        pass
-
-    try:
-        d_p = decomp_label(lower_a, layout[lower_i][lower_j])
-        c = list_get(d_p, counter_idx, 0)
-        c = 0 if c is '' else int(c)
-        d_p[counter_idx] = lower_cnt + c
-        layout[lower_i][lower_j] = comp_label(lower_a, d_p)
-    except NameError:
-        pass
 
     minval = keystat.cnt.min()
     maxval = keystat.cnt.max()
