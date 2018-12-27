@@ -24,6 +24,12 @@ def remap(in_min, in_max, out_min, out_max, x):
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 
 
+def try_int(default, *args):
+    try:
+        return int(*args)
+    except (ValueError, TypeError) as e:
+        return default
+
 def list_get(l, idx, default):
     try:
         return l[idx]
@@ -235,8 +241,7 @@ def main():
                                     fn_params[abbrev]["a"] = a
 
 
-                    c = list_get(d_p, counter_idx, 0)
-                    c = 0 if c is '' else int(c)
+                    c = try_int(list_get(d_p, counter_idx, 0))
                     d_p[counter_idx] = cnt + c
                     layout[i][j] = comp_label(a, d_p)
 
@@ -244,8 +249,7 @@ def main():
         if all(v is not None for v in params.values()):
             i, j, a, counter = params["i"], params["j"], params["a"], params["counter"]
             d_p = decomp_label(a, layout[i][j])
-            c = list_get(d_p, counter_idx, 0)
-            c = 0 if c is '' else int(c)
+            c = try_int(list_get(d_p, counter_idx, 0))
             d_p[counter_idx] = counter + c
             layout[i][j] = comp_label(a, d_p)
 
@@ -262,8 +266,7 @@ def main():
     #                a = p.get('a', a)
     #            elif isinstance(p, str):
     #                d_p = decomp_label(a, p)
-    #                c = list_get(d_p, counter_idx, 0)
-    #                c = 0 if c is '' else int(c)
+    #                c = try_int(list_get(d_p, counter_idx, 0))
     #                minval = min(c, minval)
     #                maxval = max(c, maxval)
 
@@ -280,8 +283,7 @@ def main():
                     a = p.get('a', a)
                 elif isinstance(p, str):
                     d_p = decomp_label(a, p)
-                    c = list_get(d_p, counter_idx, 0)
-                    c = 0 if c is '' else int(c)
+                    c = try_int(list_get(d_p, counter_idx, 0))
                     #col = format_rgb(
                     #    stepped_gradient(
                     #        minval, maxval, c, gradient_colors))
