@@ -10,7 +10,6 @@ import sys
 import argparse
 EPSILON = sys.float_info.epsilon
 
-
 def constrain(a, b, x):
     """Constrains a number to be within a range."""
     return min(b, max(a, x))
@@ -24,11 +23,26 @@ def remap(in_min, in_max, out_min, out_max, x):
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 
 
-def try_int(default, *args):
-    try:
-        return int(*args)
-    except (ValueError, TypeError) as e:
-        return default
+def try_int(arg, *args):
+    args_len = len(args)
+    if args_len == 0:
+        x = arg
+        default = 0
+    else:
+        default = arg
+        x = args[0]
+        args = args[1:]
+
+    if 0 <= args_len <= 1 and isinstance(x, int):
+        result = x
+    else:
+        try:
+            result = int(str(x), *args)
+        except (ValueError) as e:
+            result = default
+
+    return result
+
 
 def list_get(l, idx, default):
     try:
@@ -133,71 +147,8 @@ def comp_label(a, l):
                      in LABEL_MAP[a]).rstrip('\n')
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description='Draws heatmap on keyboard-layout-editor json')
-    parser.add_argument('-i', action='store', dest='stat_path',
-                        help='keystat csv file path; default ~/.keystat.csv',
-                        default=expanduser("~") + "/.keystat.csv")
-    parser.add_argument(
-        '-l',
-        action='store',
-        dest='layout_path',
-        required=True,
-        help='keyboard-layout-editor json path')
-    parser.add_argument(
-        '-o',
-        action='store',
-        dest='output_path',
-        required=True,
-        help='result kle json path')
-    args = parser.parse_args()
-    return args.stat_path, args.layout_path, args.output_path
-
-def main():
-    stat_path, layout_path, output_path = parse_args()
-
-    keystat = read_keystat(stat_path)
-    layout = read_layout(layout_path)
-
-    #gradient_colors = [0x00bab4, 0xCCD100, 0xFF0000] # cayan, green, yellow, red
-    #gradient_colors = [0xcccccc,0x00FFFF, 0x00FF00, 0xFFFF00, 0xFF0000, 0xFF0000] # toxic rainbow
-    gradient_colors = [0xcccccc,0xFEEB65, 0xE4521B, 0xcd2f2c] # pretty yellow orange orange red
-    #gradient_colors = [0xcccccc, 0xFFD100, 0xcb2f2a]          #        yellow orange red
-    #gradient_colors = [0xFFFFFF, 0x606060, 0x404040] # grayscale
-    #gradient_colors = [0xcccccc, 0xffe08d, 0xf9cd31,0xf9cd31, 0xff6d1a] # mine keycaps
-    gradient_colors = list(map(int_rgb2tuple, gradient_colors))
-
-    default_a = 4
-    hand_idx = 9
-    counter_idx = 10
-
-    legends_idxs = slice(0, 9)
-    iso_gr_idxs = [[0, 1, 2],
-                   [3, 4, 5]]
-
-    fn_idxs = [[9,  [0, 3, 6]],
-               [11, [2, 5, 8]]]
-
-    fn_names2abbrev = {
-        "LOWER"  : "l" ,
-        "LOWER_L": "ll",
-        "LOWER_R": "lr",
-        "RAISE"  : "r" ,
-        "RAISE_L": "rl",
-        "RAISE_R": "rr",
-        "FN"     : "f" ,
-        "FN1"    : "f1",
-        "FN2"    : "f2",
-        "FN3"    : "f3",
-        "FN4"    : "f4"}
-
-    fn_abbrev2names = {v: k for k, v in fn_names2abbrev.items()}
-
-    fn_params = {abbrev: {"i": None, "j": None, "a": None, "counter": 0}
-                 for abbrev in fn_abbrev2names}
-
-    count_keys = 0
+def count_keypresses(layout, keystat):
+    #count_keys = 0
     a = default_a
     for i, line in enumerate(layout):
         if isinstance(line, list):
@@ -206,7 +157,7 @@ def main():
                     a = p.get('a', a)
                 elif isinstance(p, str):
                     d_p = decomp_label(a, p)
-                    count_keys += 1
+                    #count_keys += 1
                     cnt = 0
                     hand = d_p[hand_idx]
 
@@ -231,8 +182,9 @@ def main():
                                 for fn_abbr_idx, idxs in fn_idxs:
                                     if idx in idxs:
                                         fn_abbr = d_p[fn_abbr_idx]
-                                        if fn_abbr:
+                                        if fn_abbr in fn_params:
                                             fn_params[fn_abbr]["counter"] += legend_cnt
+                                            break
 
                                 if s_k in fn_names2abbrev:
                                     abbrev = fn_names2abbrev[s_k]
@@ -253,11 +205,13 @@ def main():
             d_p[counter_idx] = counter + c
             layout[i][j] = comp_label(a, d_p)
 
+    return layout
 
+def calc_min_max_keypresses(layout, keystat):
     minval = keystat.cnt.min()
     maxval = keystat.cnt.max()
-    #minval = keystat.cnt.max()
-    #maxval = 0
+    #minval = None
+    #maxval = None
     #a = default_a
     #for i, line in enumerate(layout):
     #    if isinstance(line, list):
@@ -266,10 +220,13 @@ def main():
     #                a = p.get('a', a)
     #            elif isinstance(p, str):
     #                d_p = decomp_label(a, p)
-    #                c = try_int(list_get(d_p, counter_idx, 0))
-    #                minval = min(c, minval)
-    #                maxval = max(c, maxval)
 
+    #                c = try_int(list_get(d_p, counter_idx, 0))
+    #                minval = min(c, minval) if minval is not None else c
+    #                maxval = max(c, maxval) if maxval is not None else c
+    return minval, maxval
+
+def color_keys(layout, minval, maxval):
     a = default_a
     inserted = False
     cntr = 0
@@ -298,6 +255,80 @@ def main():
                     layout[i].insert(j, {"c": col})
                     inserted = True
                     cntr += 1
+    return layout
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Draws heatmap on keyboard-layout-editor json')
+    parser.add_argument('-i', action='store', dest='stat_path',
+                        help='keystat csv file path; default ~/.keystat.csv',
+                        default=expanduser("~") + "/.keystat.csv")
+    parser.add_argument(
+        '-l',
+        action='store',
+        dest='layout_path',
+        required=True,
+        help='keyboard-layout-editor json path')
+    parser.add_argument(
+        '-o',
+        action='store',
+        dest='output_path',
+        required=True,
+        help='result kle json path')
+    args = parser.parse_args()
+    return args.stat_path, args.layout_path, args.output_path
+
+### Globals, need to plase them in settings file
+
+#gradient_colors = [0x00bab4, 0xCCD100, 0xFF0000] # cayan, green, yellow, red
+#gradient_colors = [0xcccccc,0x00FFFF, 0x00FF00, 0xFFFF00, 0xFF0000, 0xFF0000] # toxic rainbow
+gradient_colors = [0xcccccc,0xFEEB65, 0xE4521B, 0xcd2f2c] # pretty yellow orange orange red
+#gradient_colors = [0xcccccc, 0xFFD100, 0xcb2f2a]          #        yellow orange red
+#gradient_colors = [0xFFFFFF, 0x606060, 0x404040] # grayscale
+#gradient_colors = [0xcccccc, 0xffe08d, 0xf9cd31,0xf9cd31, 0xff6d1a] # mine keycaps
+gradient_colors = list(map(int_rgb2tuple, gradient_colors))
+
+default_a = 4
+hand_idx = 9
+counter_idx = 10
+
+legends_idxs = slice(0, 9)
+iso_gr_idxs = [[0, 1, 2],
+               [3, 4, 5]]
+
+fn_idxs = [[9,  [0, 3, 6]],
+           [11, [2, 5, 8]]]
+
+fn_names2abbrev = {
+    "LOWER"  : "l" ,
+    "LOWER_L": "ll",
+    "LOWER_R": "lr",
+    "RAISE"  : "r" ,
+    "RAISE_L": "rl",
+    "RAISE_R": "rr",
+    "FN"     : "f" ,
+    "FN1"    : "f1",
+    "FN2"    : "f2",
+    "FN3"    : "f3",
+    "FN4"    : "f4"}
+
+fn_abbrev2names = {v: k for k, v in fn_names2abbrev.items()}
+
+fn_params = {abbrev: {"i": None, "j": None, "a": None, "counter": 0}
+             for abbrev in fn_abbrev2names}
+
+### Globals end
+
+def main():
+    stat_path, layout_path, output_path = parse_args()
+
+    keystat = read_keystat(stat_path)
+    layout = read_layout(layout_path)
+
+    layout = count_keypresses(layout, keystat)
+    minval, maxval = calc_min_max_keypresses(layout, keystat)
+    layout = color_keys(layout, minval, maxval)
 
     write_heatmap(layout, output_path)
 
