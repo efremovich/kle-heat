@@ -22,8 +22,8 @@ HAND_IDX = 9
 COUNTER_IDX = 10
 
 #LEGENDS_IDXS = [0, 2, 3, 5, 6, 8]
-LEGENDS_IDXS = [1, 4, 7]
-#LEGENDS_IDXS = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+#LEGENDS_IDXS = [1, 4, 7]
+LEGENDS_IDXS = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 ISO_GR_IDXS = [[0, 1, 2],
                [3, 4, 5]]
 
